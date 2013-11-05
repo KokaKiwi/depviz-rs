@@ -1,22 +1,26 @@
 RUSTC						=	rustc
 RUSTDOC						=	rustdoc
 
-RUSTCFLAGS					:=
-RUSTDOCFLAGS				:=
-
 BUILDDIR					:=	.build
 LIBDIR						:=	lib
 
+RUSTCFLAGS					:=	-L $(LIBDIR)
+RUSTDOCFLAGS				:=
+
+## UTILS
 # Recursive wildcard function
 # http://blog.jgc.org/2011/07/gnu-make-recursive-wildcard-function.html
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
   $(filter $(subst *,%,$2),$d))
+
+map = $(foreach a,$(2),$(call $(1),$(a)))
 
 ######################################################################
 define MODULE_RULES
 
 $(1)_PATH					:=	src/$(1)
 $(1)_SOURCES				:=	$$(call rwildcard,$$($(1)_PATH),*.rs)
+$(1)_DEPS_NAMES				:=	$$(foreach dep,$$($(1)_DEPS),$(BUILDDIR)/.build_$$(dep))
 
 ifneq ($$(wildcard $$($(1)_PATH)/main.rs),)
 $(1)_TYPE					:=	bin
@@ -38,7 +42,7 @@ endif
 $(1):						$(BUILDDIR)/.build_$(1)
 .PHONY:						$(1)
 
-$(BUILDDIR)/.build_$(1):	$$($(1)_SOURCES)
+$(BUILDDIR)/.build_$(1):	$$($(1)_DEPS_NAMES) $$($(1)_SOURCES)
 ifeq ($$($(1)_TYPE),bin)
 	$$(RUSTC) $$(RUSTCFLAGS) -o $(1) $$($(1)_MAIN_SOURCE)
 else ifeq ($$($(1)_TYPE),lib)
