@@ -9,6 +9,8 @@
 
 #[crate_type = "bin"];
 
+#[feature(managed_boxes)];
+
 extern mod extra;
 extern mod syntax;
 
