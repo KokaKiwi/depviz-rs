@@ -7,6 +7,8 @@
 #[author = "KokaKiwi <kokakiwi@kokakiwi.net>"];
 #[license = "MIT"];
 
+#[crate_type = "lib"];
+
 extern mod extra;
 extern mod syntax;
 
