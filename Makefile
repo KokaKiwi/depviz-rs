@@ -1,3 +1,3 @@
-MODULES	:=	depviz
+RUST_MODULES	:=	depviz
 
-include mk/rust.mk
+include			rust-mk/rust.mk
