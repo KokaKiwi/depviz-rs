@@ -15,6 +15,7 @@ extern mod extra;
 extern mod syntax;
 
 use std::os;
+use std::path::Path;
 use extra::getopts::groups;
 
 mod depviz;
@@ -52,6 +53,15 @@ fn main_args(args: &[~str]) -> int
         print_usage(program, opts);
         return 1;
     }
+
+    let filename = matches.free[1];
+    let path = Path::new(filename);
+    let name = match path.filestem_str() {
+        Some(s) => s.to_owned(),
+        None => fail!(),
+    };
+
+    let _root = depviz::construct::construct_crate(name, path);
 
     return 0;
 }

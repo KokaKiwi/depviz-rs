@@ -1,4 +1,4 @@
 # Build stuff
-/.build
+/.rust_build
 /lib
 /depviz
