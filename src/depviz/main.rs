@@ -63,12 +63,12 @@ fn main_args(args: &[~str]) -> int
     };
 
     let root = depviz::construct::construct_crate(name, path);
-    print_tree(root, ~"");
+    print_tree(root, "");
 
     return 0;
 }
 
-fn print_tree(node: &Node, indent: ~str)
+fn print_tree(node: &Node, indent: &str)
 {
     print(indent);
     println!("{}: {}", node.name, node.path.display());
