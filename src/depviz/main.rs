@@ -17,6 +17,7 @@ extern mod syntax;
 use std::os;
 use std::path::Path;
 use extra::getopts::groups;
+use depviz::Node;
 
 mod depviz;
 
@@ -61,9 +62,21 @@ fn main_args(args: &[~str]) -> int
         None => fail!(),
     };
 
-    let _root = depviz::construct::construct_crate(name, path);
+    let root = depviz::construct::construct_crate(name, path);
+    print_tree(root, ~"");
 
     return 0;
+}
+
+fn print_tree(node: &Node, indent: ~str)
+{
+    print(indent);
+    println!("{}: {}", node.name, node.path.display());
+
+    for child in node.children.iter()
+    {
+        print_tree(*child, indent + "    ")
+    }
 }
 
 fn main()
