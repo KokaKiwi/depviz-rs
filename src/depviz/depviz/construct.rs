@@ -10,82 +10,130 @@ use syntax::parse::token::interner_get;
 use depviz::Node;
 use depviz::helper;
 
+type Module = (~str, Option<Path>);
+
 struct DependenciesContext
 {
     path: Path,
-    modules: ~[(~str, Path)],
+    deps: ~[Module],
 }
 
 impl Visitor<()> for DependenciesContext
 {
-    fn visit_item(&mut self, item: @ast::item, _:())
+    fn visit_item(&mut self, item: @ast::item, _: ())
     {
+        let path = self.path.dir_path();
+        self.pass_item(path, item);
+    }
+
+    fn visit_view_item(&mut self, item: &ast::view_item, _:())
+    {
+        // let path = self.path.dir_path();
         match item.node
         {
-            ast::item_mod(_) => {
-                let name = interner_get(item.ident.name).to_owned();
-                self.resolve_mod(name, item);
+            ast::view_item_extern_mod(id, _, _, _) => {
+                let name = interner_get(id.name).to_owned();
+                self.pass_extern_mod(name);
             }
-            _ => {}
+            _ => {
+                visit::walk_view_item(self, item, ());
+            }
         }
     }
 }
 
 impl DependenciesContext
 {
-    fn resolve_mod(&mut self, name: ~str, item: @ast::item)
+    fn pass_item(&mut self, path: Path, item: @ast::item)
     {
-        let path = self.resolve_mod_path(name.clone(), item);
-
-        self.modules.push((name.clone(), path));
+        match item.node
+        {
+            ast::item_mod(ref module) => {
+                let name = interner_get(item.ident.name).to_owned();
+                if !self.pass_mod(path.clone(), name, item)
+                {
+                    for subitem in module.items.iter()
+                    {
+                        let subname = interner_get(item.ident.name);
+                        self.pass_item(path.join(subname), *subitem);
+                    }
+                }
+            }
+            _ => {
+                visit::walk_item(self, item, ());
+            }
+        }
     }
 
-    fn resolve_mod_path(&self, name: ~str, item: @ast::item) -> Path
+    fn pass_mod(&mut self, path: Path, name: ~str, item: @ast::item) -> bool
     {
-        let dir_path = self.path.dir_path();
+        match self.resolve_mod_path(path, name, item)
+        {
+            Some(path) => {
+                self.deps.push((name, Some(path)));
+                true
+            }
+            None => {
+                false
+            }
+        }
+    }
 
+    fn pass_extern_mod(&mut self, name: ~str)
+    {
+        self.deps.push((name, None));
+    }
+
+    fn resolve_mod_path(&self, path: Path, name: &str, item: @ast::item) -> Option<Path>
+    {
         match attr::first_attr_value_str_by_name(item.attrs, "name")
         {
-            Some(d) => dir_path.join(d),
+            Some(d) => Some(path.join(d)),
             None => {
                 let default_path_str = name + ".rs";
-                let default_path = dir_path.join(default_path_str.as_slice());
+                let default_path = path.join(default_path_str.as_slice());
                 let default_exists = default_path.exists();
 
                 let second_path_str = name + "/mod.rs";
-                let second_path = dir_path.join(second_path_str.as_slice());
+                let second_path = path.join(second_path_str.as_slice());
                 let second_exists = second_path.exists();
 
                 match (default_exists, second_exists)
                 {
-                    (true, false) => default_path,
-                    (false, true) => second_path,
-                    (false, false) => fail!("file not found for module `{}`", name),
-                    (true, true) => fail!("file for module `{}` found at both {} and {}",
-                                            name, default_path_str, second_path_str),
+                    (true, false) => Some(default_path),
+                    (false, true) => Some(second_path),
+                    (false, false) => None,
+                    (true, true) => fail!("file for module `{}` found at both {} and {} in {}",
+                                            name, default_path_str, second_path_str, self.path.display()),
                 }
             }
         }
     }
 }
 
-pub fn construct_crate(name: ~str, path: Path) -> ~Node
+pub fn construct_crate(name: ~str, path: Path) -> Node
 {
-    let mut root = ~Node::new(name.clone(), path.clone());
+    let mut root = Node::new(name.clone(), path.clone());
     let crate = helper::parse_crate(path.clone());
 
     let mut ctxt = DependenciesContext {
         path: path.clone(),
-        modules: ~[],
+        deps: ~[],
     };
     visit::walk_crate(&mut ctxt, &crate, ());
 
-    for module in ctxt.modules.iter()
+    for dep in ctxt.deps.iter()
     {
-        let name = module.first();
-        let path = module.second();
+        let name = dep.first();
+        let node = match dep.second() {
+            Some(path) => {
+                construct_crate(name, path)
+            }
+            None => {
+                Node::new_extern(name)
+            }
+        };
 
-        let node = construct_crate(name, path);
         root.children.push(node);
     }
 

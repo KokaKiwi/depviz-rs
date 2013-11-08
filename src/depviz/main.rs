@@ -16,7 +16,9 @@ extern mod syntax;
 
 use std::os;
 use std::path::Path;
+
 use extra::getopts::groups;
+
 use depviz::Node;
 
 mod depviz;
@@ -58,24 +60,63 @@ fn main_args(args: &[~str]) -> int
     let filename = matches.free[1];
     let path = Path::new(filename);
     let name = match path.filestem_str() {
-        Some(s) => s.to_owned(),
+        Some(s) => {
+            if s == "lib"
+            {
+                let dir_path = path.dir_path();
+                match dir_path.filestem_str()
+                {
+                    Some(d) => d.slice_from(3).to_owned(),
+                    None => s.to_owned(),
+                }
+            }
+            else
+            {
+                s.to_owned()
+            }
+        }
         None => fail!(),
     };
 
     let root = depviz::construct::construct_crate(name, path);
-    print_tree(root, "");
+    print_tree(&root, "");
 
     return 0;
 }
 
 fn print_tree(node: &Node, indent: &str)
 {
-    print(indent);
-    println!("{}: {}", node.name, node.path.display());
-
-    for child in node.children.iter()
+    match node.path
     {
-        print_tree(*child, indent + "    ")
+        Some(ref path) => {
+            // print(indent);
+            // println!("\\#[path = \"{}\"]", path.display());
+
+            print(indent);
+            if node.children.len() > 0
+            {
+                println!("mod {} \\{", node.name);
+            }
+            else
+            {
+                println!("mod {};", node.name);
+            }
+
+            for child in node.children.iter()
+            {
+                print_tree(child, indent + "  ");
+            }
+
+            if node.children.len() > 0
+            {
+                print(indent);
+                println("}");
+            }
+        }
+        None => {
+            print(indent);
+            println!("extern mod {};", node.name);
+        }
     }
 }
 

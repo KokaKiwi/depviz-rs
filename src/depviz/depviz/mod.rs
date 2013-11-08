@@ -5,11 +5,10 @@ pub mod helper;
 
 pub struct Node
 {
-    parent: Option<@Node>,
-    children: ~[~Node],
-
     name: ~str,
-    path: Path,
+    path: Option<Path>,
+
+    children: ~[Node],
 }
 
 impl Node
@@ -17,11 +16,20 @@ impl Node
     pub fn new(name: ~str, path: Path) -> Node
     {
         Node {
-            parent: None,
-            children: ~[],
-
             name: name,
-            path: path,
+            path: Some(path),
+
+            children: ~[],
+        }
+    }
+
+    pub fn new_extern(name: ~str) -> Node
+    {
+        Node {
+            name: name,
+            path: None,
+
+            children: ~[],
         }
     }
 }
