@@ -112,9 +112,9 @@ impl DependenciesContext
     }
 }
 
-pub fn construct_crate(name: ~str, path: Path) -> ~Node
+pub fn construct_crate(name: ~str, path: Path, base: &str) -> ~Node
 {
-    let mut root = Node::new(name.clone(), path.clone());
+    let mut root = Node::new(name.clone(), path.clone(), base.to_owned());
     let mut ctxt = DependenciesContext {
         path: path.clone(),
         deps: ~[],
@@ -132,16 +132,17 @@ pub fn construct_crate(name: ~str, path: Path) -> ~Node
     {
         let name = dep.first();
         let path = dep.second();
+        let base = base.to_owned();
 
         let schan = chan.clone();
         do spawn
         {
             let node = match path {
                 Some(ref path) => {
-                    construct_crate(name.clone(), path.clone())
+                    construct_crate(name.clone(), path.clone(), base + "_" + name)
                 }
                 None => {
-                    Node::new_extern(name.clone())
+                    Node::new_extern(name.clone(), base + "_" + name)
                 }
             };
 
@@ -154,23 +155,6 @@ pub fn construct_crate(name: ~str, path: Path) -> ~Node
         let node = port.recv();
         root.children.push(node);
     }
-
-/*
-    for dep in ctxt.deps.iter()
-    {
-        let name = dep.first();
-        let node = match dep.second() {
-            Some(path) => {
-                construct_crate(name, path)
-            }
-            None => {
-                Node::new_extern(name)
-            }
-        };
-
-        root.children.push(node);
-    }
-*/
 
     root
 }

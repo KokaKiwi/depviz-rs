@@ -78,47 +78,11 @@ fn main_args(args: &[~str]) -> int
         None => fail!(),
     };
 
-    let root = depviz::construct::construct_crate(name, path);
+    let root = depviz::construct::construct_crate(name.clone(), path, name.clone());
     dot_output(root);
 
     return 0;
 }
-
-// fn print_tree(node: &Node, indent: &str)
-// {
-//     match node.path
-//     {
-//         Some(ref path) => {
-//             // print(indent);
-//             // println!("\\#[path = \"{}\"]", path.display());
-
-//             print(indent);
-//             if node.children.len() > 0
-//             {
-//                 println!("mod {} \\{", node.name);
-//             }
-//             else
-//             {
-//                 println!("mod {};", node.name);
-//             }
-
-//             for child in node.children.iter()
-//             {
-//                 print_tree(*child, indent + "  ");
-//             }
-
-//             if node.children.len() > 0
-//             {
-//                 print(indent);
-//                 println("}");
-//             }
-//         }
-//         None => {
-//             print(indent);
-//             println!("extern mod {};", node.name);
-//         }
-//     }
-// }
 
 fn dot_output(root: &Node)
 {
@@ -131,9 +95,10 @@ fn dot_output(root: &Node)
 
 fn dot_trace(node: &Node)
 {
+    println!("  {} [label=\"{}\"];", node.ast_path, node.name);
     for child in node.children.iter()
     {
-        println!("  {} -> {};", node.name, child.name);
+        println!("    {} -> {};", node.ast_path, child.ast_path);
         dot_trace(*child);
     }
 }
