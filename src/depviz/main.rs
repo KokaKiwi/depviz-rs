@@ -79,44 +79,62 @@ fn main_args(args: &[~str]) -> int
     };
 
     let root = depviz::construct::construct_crate(name, path);
-    print_tree(&root, "");
+    dot_output(root);
 
     return 0;
 }
 
-fn print_tree(node: &Node, indent: &str)
+// fn print_tree(node: &Node, indent: &str)
+// {
+//     match node.path
+//     {
+//         Some(ref path) => {
+//             // print(indent);
+//             // println!("\\#[path = \"{}\"]", path.display());
+
+//             print(indent);
+//             if node.children.len() > 0
+//             {
+//                 println!("mod {} \\{", node.name);
+//             }
+//             else
+//             {
+//                 println!("mod {};", node.name);
+//             }
+
+//             for child in node.children.iter()
+//             {
+//                 print_tree(*child, indent + "  ");
+//             }
+
+//             if node.children.len() > 0
+//             {
+//                 print(indent);
+//                 println("}");
+//             }
+//         }
+//         None => {
+//             print(indent);
+//             println!("extern mod {};", node.name);
+//         }
+//     }
+// }
+
+fn dot_output(root: &Node)
 {
-    match node.path
+    println("digraph rust {");
+
+    dot_trace(root);
+
+    println("}");
+}
+
+fn dot_trace(node: &Node)
+{
+    for child in node.children.iter()
     {
-        Some(ref path) => {
-            // print(indent);
-            // println!("\\#[path = \"{}\"]", path.display());
-
-            print(indent);
-            if node.children.len() > 0
-            {
-                println!("mod {} \\{", node.name);
-            }
-            else
-            {
-                println!("mod {};", node.name);
-            }
-
-            for child in node.children.iter()
-            {
-                print_tree(child, indent + "  ");
-            }
-
-            if node.children.len() > 0
-            {
-                print(indent);
-                println("}");
-            }
-        }
-        None => {
-            print(indent);
-            println!("extern mod {};", node.name);
-        }
+        println!("  {} -> {};", node.name, child.name);
+        dot_trace(*child);
     }
 }
 

@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::comm::SharedChan;
 
 use syntax::ast;
 use syntax::attr;
@@ -111,17 +112,50 @@ impl DependenciesContext
     }
 }
 
-pub fn construct_crate(name: ~str, path: Path) -> Node
+pub fn construct_crate(name: ~str, path: Path) -> ~Node
 {
     let mut root = Node::new(name.clone(), path.clone());
-    let crate = helper::parse_crate(path.clone());
-
     let mut ctxt = DependenciesContext {
         path: path.clone(),
         deps: ~[],
     };
-    visit::walk_crate(&mut ctxt, &crate, ());
 
+    {
+        let crate = helper::parse_crate(path.clone());
+        visit::walk_crate(&mut ctxt, &crate, ());
+    }
+
+    let (port, chan) = stream();
+    let chan = SharedChan::new(chan);
+
+    for dep in ctxt.deps.iter()
+    {
+        let name = dep.first();
+        let path = dep.second();
+
+        let schan = chan.clone();
+        do spawn
+        {
+            let node = match path {
+                Some(ref path) => {
+                    construct_crate(name.clone(), path.clone())
+                }
+                None => {
+                    Node::new_extern(name.clone())
+                }
+            };
+
+            schan.send(node);
+        }
+    }
+
+    for _ in ctxt.deps.iter()
+    {
+        let node = port.recv();
+        root.children.push(node);
+    }
+
+/*
     for dep in ctxt.deps.iter()
     {
         let name = dep.first();
@@ -136,6 +170,7 @@ pub fn construct_crate(name: ~str, path: Path) -> Node
 
         root.children.push(node);
     }
+*/
 
     root
 }

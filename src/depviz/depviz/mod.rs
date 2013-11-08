@@ -8,14 +8,14 @@ pub struct Node
     name: ~str,
     path: Option<Path>,
 
-    children: ~[Node],
+    children: ~[~Node],
 }
 
 impl Node
 {
-    pub fn new(name: ~str, path: Path) -> Node
+    pub fn new(name: ~str, path: Path) -> ~Node
     {
-        Node {
+        ~Node {
             name: name,
             path: Some(path),
 
@@ -23,9 +23,9 @@ impl Node
         }
     }
 
-    pub fn new_extern(name: ~str) -> Node
+    pub fn new_extern(name: ~str) -> ~Node
     {
-        Node {
+        ~Node {
             name: name,
             path: None,
 
