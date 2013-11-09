@@ -98,8 +98,8 @@ fn dot_trace(node: &Node)
     println!("  {} [label=\"{}\"];", node.ast_path, node.name);
     for child in node.children.iter()
     {
-        println!("    {} -> {};", node.ast_path, child.ast_path);
         dot_trace(*child);
+        println!("    {} -> {};", node.ast_path, child.ast_path);
     }
 }
 
