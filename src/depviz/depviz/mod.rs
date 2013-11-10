@@ -2,6 +2,7 @@ use std::path::Path;
 
 pub mod construct;
 pub mod helper;
+pub mod visit;
 
 pub struct Node
 {

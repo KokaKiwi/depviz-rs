@@ -20,6 +20,7 @@ use std::path::Path;
 use extra::getopts::groups;
 
 use depviz::Node;
+use depviz::construct;
 
 mod depviz;
 
@@ -78,7 +79,9 @@ fn main_args(args: &[~str]) -> int
         None => fail!(),
     };
 
-    let root = depviz::construct::construct_crate(name.clone(), path, name.clone());
+    let mut constructor = construct::NodeConstructor::new();
+
+    let root = constructor.construct_crate(name.clone(), path, name.clone());
     dot_output(root);
 
     return 0;
