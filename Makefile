@@ -1,4 +1,4 @@
 RUST_MODULES	:=	depviz
-# RUSTCFLAGS		+=	--opt-level=3
+RUST_SUBMODULES	:=	argparse-rs
 
 include			rust-mk/rust.mk

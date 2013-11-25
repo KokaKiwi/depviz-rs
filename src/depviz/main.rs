@@ -10,55 +10,56 @@
 #[crate_type = "bin"];
 
 #[feature(managed_boxes)];
+#[feature(macro_rules)];
 
 extern mod extra;
 extern mod syntax;
+extern mod argparse;
 
 use std::os;
 use std::path::Path;
 
-use extra::getopts::groups;
+use argparse::ArgumentParser;
+use argparse::arg;
 
 use depviz::Node;
 use depviz::construct;
+
+#[path = "../../deps/argparse-rs/src/argparse/macros.rs"]
+mod argparse_macros;
 
 mod depviz;
 
 static BRIEF_USAGE: &'static str = "Rust crate dependencies visualization.";
 
-fn print_usage(program: &str, opts: &[groups::OptGroup])
-{
-    println!("Usage: {:s} [OPTIONS] FILE", program);
-    println!("");
-    print(groups::usage(BRIEF_USAGE, opts));
-}
-
 fn main_args(args: &[~str]) -> int
 {
-    let program = args[0].as_slice();
+    let mut parser = ArgumentParser::new();
+    parser.description = Some(BRIEF_USAGE);
 
     let opts = ~[
-        groups::optflag("h", "help", "Show this help and exit."),
+        create_arg!("-h", "--help"; ty = arg::ArgTyBool, help = Some("Show this help and exit.")),
+        create_arg!("filename"),
     ];
+    parser.add_arguments(opts);
 
-    let matches = match groups::getopts(args, opts) {
-        Ok(m) => m,
-        Err(f) => fail!(f.to_err_msg()),
+    let args = match parser.parse_args(args.tail()) {
+        Ok(args) => args,
+        Err(e) => {
+            println!("Error: {}", e.to_str());
+            parser.print_help();
+            return 1;
+        }
     };
 
-    if matches.opts_present([~"h", ~"help"])
+    if args.get::<bool>("help")
     {
-        print_usage(program, opts);
+        parser.print_help();
         return 0;
     }
 
-    if matches.free.len() <= 1
-    {
-        print_usage(program, opts);
-        return 1;
-    }
+    let filename = args.get::<~str>("filename");
 
-    let filename = matches.free[1];
     let path = Path::new(filename);
     let name = match path.filestem_str() {
         Some(s) => {
